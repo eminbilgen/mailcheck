@@ -109,7 +109,7 @@ export async function checkDmarc(domain, r) {
 
 export const COMMON_SELECTORS = [
   'default', 'google', 'selector1', 'selector2', 'k1', 'k2', 'k3', 's1', 's2', 'mail', 'dkim', 'smtp',
-  'mandrill', 'mailgun', 'brevo', 'zoho', 'protonmail', 'protonmail2', 'protonmail3', 'fm1', 'fm2', 'fm3',
+  'mandrill', 'mailgun', 'brevo', 'brevo1', 'brevo2', 'zoho', 'protonmail', 'protonmail2', 'protonmail3', 'fm1', 'fm2', 'fm3',
   'key1', 'key2', 'mxvault', 'email', 'dk', 'everlytic', 'cm', 'sig1', 'amazonses',
 ];
 
