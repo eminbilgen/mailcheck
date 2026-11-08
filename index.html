@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>mailcheck — Will your email land in the inbox?</title>
+<meta name="description" content="Free SPF, DKIM, DMARC, MX, MTA-STS and TLS-RPT check for any domain. Runs in your browser, stores nothing.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0b;--panel:#111113;--line:#232327;--tx:#ecebe6;--mut:#8b8b92;--ac:#ff5b2e;--ok:#5bd68a;--warn:#e7b341;--fail:#ff5468;--info:#6cb4ff}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.55 'Inter Tight',system-ui,sans-serif;min-height:100vh}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 clamp(18px,4vw,32px)}
+nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0;font:600 13px 'JetBrains Mono',monospace;letter-spacing:.04em}
+nav a{color:var(--mut);text-decoration:none}nav a:hover{color:var(--tx)}
+nav .logo{color:var(--tx)}nav .logo i{color:var(--ac);font-style:normal}
+.hero{padding:clamp(32px,8vh,84px) 0 28px}
+.eyebrow{font:400 12px 'JetBrains Mono',monospace;color:var(--ac);letter-spacing:.14em;text-transform:uppercase}
+h1{font:700 clamp(38px,7vw,84px)/.98 'Inter Tight';letter-spacing:-.04em;margin:14px 0 18px;max-width:14ch}
+.lede{color:#b9b8b2;font-size:clamp(16px,2vw,19px);max-width:52ch}
+form{display:flex;gap:10px;margin-top:30px;flex-wrap:wrap}
+.field{flex:1 1 320px;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);padding:0 16px;border-radius:3px;transition:border-color .2s,box-shadow .2s}
+.field:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px rgba(255,91,46,.14)}
+.field span{font:13px 'JetBrains Mono',monospace;color:var(--mut)}
+input{flex:1;background:none;border:0;color:var(--tx);font:400 18px 'JetBrains Mono',monospace;padding:17px 0;outline:none;min-width:0}
+button.go{background:var(--ac);color:#0a0a0b;border:0;font:700 16px 'Inter Tight';padding:0 28px;border-radius:3px;cursor:pointer;min-height:56px;transition:transform .15s,filter .15s}
+button.go:hover{filter:brightness(1.08)}button.go:active{transform:scale(.98)}button.go:disabled{opacity:.6;cursor:wait}
+.opts{margin-top:12px;font:12px 'JetBrains Mono',monospace;color:var(--mut);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.opts input{font-size:12px;padding:6px 10px;background:var(--panel);border:1px solid var(--line);border-radius:3px;width:190px}
+.try a{color:var(--tx);text-decoration:none;border-bottom:1px dashed var(--mut);margin-left:6px;cursor:pointer}
+.err{margin-top:14px;color:var(--fail);font:13px 'JetBrains Mono',monospace;min-height:20px}
+#out{display:none;padding:18px 0 70px}
+.summary{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,4vw,40px);align-items:center;padding:28px;border:1px solid var(--line);background:var(--panel);border-radius:4px;margin-bottom:18px}
+.ring{position:relative;width:148px;height:148px}
+.ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.ring .bg{stroke:var(--line)}.ring .fg{stroke:var(--ac);stroke-linecap:round;transition:stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1),stroke .4s}
+.ring .num{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring b{font:700 44px/1 'Inter Tight';letter-spacing:-.03em}.ring small{font:12px 'JetBrains Mono',monospace;color:var(--mut)}
+.summary h2{font:700 clamp(24px,3.4vw,36px)/1.1 'Inter Tight';letter-spacing:-.03em}
+.summary p{color:#b9b8b2;margin-top:6px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.badges span{font:12px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:20px;min-height:140px;opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s,border-color .3s}
+.card.show{opacity:1;transform:none}
+.card.skel{opacity:1;transform:none;position:relative;overflow:hidden}
+.card.skel::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.04) 50%,transparent 70%);animation:sh 1.2s infinite}
+@keyframes sh{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.card .head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.card h3{font:700 19px 'Inter Tight';letter-spacing:-.01em;flex:1}
+.card .sum{font:12px 'JetBrains Mono',monospace;color:var(--mut)}
+.chip{font:600 11px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:2px;letter-spacing:.06em}
+.chip.pass{background:rgba(91,214,138,.14);color:var(--ok)}.chip.warn{background:rgba(231,179,65,.14);color:var(--warn)}
+.chip.fail{background:rgba(255,84,104,.14);color:var(--fail)}.chip.info{background:rgba(108,180,255,.14);color:var(--info)}
+.card.fail{border-color:rgba(255,84,104,.45)}.card.warn{border-color:rgba(231,179,65,.35)}
+.card ul{list-style:none;padding:0;display:grid;gap:7px}
+.card li{display:grid;grid-template-columns:18px 1fr;gap:8px;font-size:14.5px;color:#c4c3bd}
+.ic{font:600 13px 'JetBrains Mono',monospace}.ic.ok{color:var(--ok)}.ic.info{color:var(--info)}.ic.warn{color:var(--warn)}.ic.fail{color:var(--fail)}
+.fix{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+.fix .lbl{font:11px 'JetBrains Mono',monospace;color:var(--ac);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.fix code{display:block;background:#0d0d0f;border:1px solid var(--line);padding:10px 12px;border-radius:3px;font:12.5px/1.5 'JetBrains Mono',monospace;word-break:break-all;color:#e4e3dc}
+.fix .row{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:6px;font:11px 'JetBrains Mono',monospace;color:var(--mut)}
+.fix button{background:none;border:1px solid var(--line);color:var(--tx);font:11px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:2px;cursor:pointer}
+.fix button:hover{border-color:var(--ac)}
+.rec{margin-top:12px}.rec summary{cursor:pointer;font:12px 'JetBrains Mono',monospace;color:var(--mut)}
+.rec code{display:block;margin-top:6px;background:#0d0d0f;padding:9px 12px;border:1px solid var(--line);border-radius:3px;font:12px/1.5 'JetBrains Mono',monospace;word-break:break-all;color:#bdbcb6}
+.share{margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;font:12px 'JetBrains Mono',monospace;color:var(--mut)}
+.share button{background:none;border:1px solid var(--line);color:var(--tx);padding:6px 12px;border-radius:2px;cursor:pointer;font:inherit}
+.cta{margin-top:26px;padding:22px;border:1px solid var(--ac);border-radius:4px;display:none;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+.cta b{font:700 20px 'Inter Tight'}.cta a{background:var(--ac);color:#0a0a0b;font-weight:700;padding:11px 20px;text-decoration:none;border-radius:2px}
+footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--mut);font:12px/1.7 'JetBrains Mono',monospace}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr;justify-items:start}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav><a class="logo" href="./">mail<i>check</i></a><a id="repo" href="#">GitHub ↗</a></nav>
+  <section class="hero">
+    <div class="eyebrow">SPF · DKIM · DMARC · MX · MTA-STS</div>
+    <h1>Will your email land in the inbox?</h1>
+    <p class="lede">Type a domain. In a second you get a score, what is broken, and the exact DNS record to fix it. Nothing is stored; the checks run in your browser.</p>
+    <form id="f" autocomplete="off">
+      <label class="field"><span>@</span><input id="d" placeholder="yourcompany.com" inputmode="url" spellcheck="false" autocapitalize="off" aria-label="Domain to check"></label>
+      <button class="go" id="go" type="submit">Check domain</button>
+    </form>
+    <div class="opts"><label>DKIM selector <input id="sel" placeholder="optional, e.g. mail"></label><span class="try">Try:<a data-d="google.com">google.com</a><a data-d="github.com">github.com</a><a data-d="example.com">example.com</a></span></div>
+    <div class="err" id="err" role="alert"></div>
+  </section>
+
+  <section id="out" aria-live="polite">
+    <div class="summary" id="summary">
+      <div class="ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="54" fill="none" stroke-width="9"/><circle class="fg" id="fg" cx="60" cy="60" r="54" fill="none" stroke-width="9" stroke-dasharray="339.292" stroke-dashoffset="339.292"/></svg><div class="num"><b id="num">0</b><small>/ 100</small></div></div>
+      <div><h2 id="title">Scanning…</h2><p id="sub">Asking DNS about the domain.</p><div class="badges" id="badges"></div></div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="share"><button id="copy">Copy link to this result</button><span id="copied"></span></div>
+    <div class="cta" id="cta"><b>Want it fixed, not just diagnosed?</b><a id="ctaLink" href="#">Get in touch</a></div>
+  </section>
+</div>
+<footer><div class="wrap">Runs entirely in your browser. DNS answers come from Cloudflare's public DNS-over-HTTPS service; the domain you type is sent there, nothing else leaves your device. DKIM is probed on common selectors only: a key under a custom selector can exist without being found. MIT licensed.</div></footer>
+
+<script type="module">
+import { runAll, dohResolver } from './src/index.js';
+
+// Fill these in when publishing.
+const REPO_URL = 'https://github.com/eminbilgen/mailcheck';
+const CONTACT_URL = ''; // e.g. 'mailto:hello@bilgen.dev'; leave empty to hide the call to action
+
+const ORDER = ['dmarc', 'spf', 'dkim', 'mx', 'mtasts', 'tlsrpt'];
+const TITLE = { dmarc: 'DMARC', spf: 'SPF', dkim: 'DKIM', mx: 'MX', mtasts: 'MTA-STS', tlsrpt: 'TLS-RPT' };
+const CHIP = { pass: 'PASS', warn: 'WARN', fail: 'FAIL', info: 'INFO' };
+const ICON = { ok: '✓', info: 'i', warn: '!', fail: '✕' };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+$('repo').href = REPO_URL;
+if (CONTACT_URL) { $('cta').style.display = 'flex'; $('ctaLink').href = CONTACT_URL; }
+
+const resolver = dohResolver();
+let runId = 0;
+
+function skeleton() {
+  $('grid').innerHTML = ORDER.map((id) => `<div class="card skel" id="c-${id}"><div class="head"><h3>${TITLE[id]}</h3><span class="sum">checking…</span></div></div>`).join('');
+}
+
+function cardHtml(c) {
+  const list = c.findings.map((x) => `<li><span class="ic ${x.level}">${ICON[x.level]}</span><span>${esc(x.text)}</span></li>`).join('');
+  const fix = c.fix ? `<div class="fix"><div class="lbl">Suggested record</div><code>${esc(c.fix.value)}</code><div class="row"><span>${esc(c.fix.type)} · ${esc(c.fix.host)}</span><button data-copy="${esc(c.fix.value)}">Copy</button></div>${c.fix.note ? `<div class="row"><span>${esc(c.fix.note)}</span></div>` : ''}</div>` : '';
+  const rec = c.record ? `<details class="rec"><summary>Published record</summary><code>${esc(c.record)}</code></details>` : '';
+  return `<div class="head"><h3>${esc(c.title)}</h3><span class="sum">${esc(c.summary || '')}</span><span class="chip ${c.status}">${CHIP[c.status]}</span></div><ul>${list}</ul>${fix}${rec}`;
+}
+
+function setRing(score) {
+  const C = 339.292;
+  const fg = $('fg');
+  fg.style.stroke = score >= 75 ? 'var(--ok)' : score >= 40 ? 'var(--warn)' : 'var(--fail)';
+  fg.style.strokeDashoffset = C * (1 - score / 100);
+  const t0 = performance.now();
+  (function tick(t) {
+    const p = Math.min((t - t0) / 1200, 1);
+    $('num').textContent = Math.round(score * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
+async function check(raw) {
+  const id = ++runId;
+  $('err').textContent = '';
+  $('go').disabled = true;
+  $('go').textContent = 'Scanning…';
+  $('out').style.display = 'block';
+  $('title').textContent = 'Scanning…';
+  $('sub').textContent = 'Asking DNS about the domain.';
+  $('badges').innerHTML = '';
+  $('fg').style.strokeDashoffset = 339.292;
+  $('num').textContent = '0';
+  skeleton();
+  let last = 0;
+  const reveal = (c) => {
+    const at = Math.max(performance.now(), last + 230);
+    last = at;
+    setTimeout(() => {
+      if (id !== runId) return;
+      const el = $('c-' + c.id);
+      if (!el) return;
+      el.className = `card ${c.status}`;
+      el.innerHTML = cardHtml(c);
+      requestAnimationFrame(() => el.classList.add('show'));
+    }, at - performance.now());
+  };
+  try {
+    const sel = $('sel').value.split(/[\s,]+/).filter(Boolean);
+    const report = await runAll(raw, resolver, { selectors: sel, onResult: reveal });
+    if (id !== runId) return;
+    const wait = Math.max(0, last - performance.now()) + 250;
+    setTimeout(() => {
+      if (id !== runId) return;
+      setRing(report.score);
+      const fails = report.checks.filter((c) => c.status === 'fail').length;
+      const warns = report.checks.filter((c) => c.status === 'warn').length;
+      $('title').textContent = `${report.domain}: grade ${report.grade}`;
+      $('sub').textContent = fails ? `${fails} problem${fails > 1 ? 's' : ''} to fix before you rely on this domain for email.` : warns ? 'Working, with a few things worth tightening.' : 'Solid setup. Nothing urgent.';
+      const passes = report.checks.filter((c) => c.status === 'pass').length;
+      $('badges').innerHTML = `<span>${fails} failing</span><span>${warns} warning${warns === 1 ? '' : 's'}</span><span>${passes} passing</span>`;
+    }, wait);
+    const url = new URL(location.href);
+    url.searchParams.set('d', report.domain);
+    history.replaceState(null, '', url);
+    $('d').value = report.domain;
+  } catch (err) {
+    if (id !== runId) return;
+    $('out').style.display = 'none';
+    $('err').textContent = err.message;
+  } finally {
+    if (id === runId) { $('go').disabled = false; $('go').textContent = 'Check domain'; }
+  }
+}
+
+$('f').addEventListener('submit', (e) => { e.preventDefault(); check($('d').value); });
+document.querySelectorAll('.try a').forEach((a) => a.addEventListener('click', () => { $('d').value = a.dataset.d; check(a.dataset.d); }));
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-copy]');
+  if (b) navigator.clipboard.writeText(b.dataset.copy).then(() => { b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy'), 1400); });
+});
+$('copy').addEventListener('click', () => navigator.clipboard.writeText(location.href).then(() => { $('copied').textContent = 'Link copied'; setTimeout(() => ($('copied').textContent = ''), 1600); }));
+const initial = new URL(location.href).searchParams.get('d');
+if (initial) { $('d').value = initial; check(initial); }
+</script>
+</body>
+</html>

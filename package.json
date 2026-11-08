@@ -1,0 +1,17 @@
+{
+  "name": "mailcheck",
+  "version": "0.1.0",
+  "description": "Email authentication and deliverability health check for any domain: SPF, DKIM, DMARC, MX, MTA-STS and TLS-RPT. Runs in Node or straight in the browser.",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": { "mailcheck": "bin/mailcheck.js" },
+  "files": ["src", "bin", "index.html", "README.md", "LICENSE"],
+  "scripts": {
+    "test": "node --test",
+    "start": "node bin/mailcheck.js"
+  },
+  "engines": { "node": ">=18" },
+  "keywords": ["email", "spf", "dkim", "dmarc", "deliverability", "dns", "mta-sts"],
+  "author": "Emin Bilgen",
+  "license": "MIT"
+}
